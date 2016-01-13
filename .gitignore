@@ -1,0 +1,23 @@
+# 编译产物
+*.o
+*.obj
+*.a
+*.so
+*.exe
+
+# 可执行程序 (构建产物)
+/example
+/test
+
+# 索引/标签文件
+tags
+cscope.out
+cscope.out.in
+cscope.out.po
+*.swp
+*~
+
+# 编辑器/IDE
+.vscode/
+.idea/
+.DS_Store
