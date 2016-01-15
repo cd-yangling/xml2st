@@ -54,6 +54,7 @@ struct person {
 	unsigned int		* age;	/* 必选 int */
 	char			* email;/* 可选 str */
 	char			* phone;/* 可选 str */
+	double			* salary;/* 可选 dbl */
 };
 
 static const struct xml2st_column person_cols[] = {
@@ -61,6 +62,7 @@ static const struct xml2st_column person_cols[] = {
 	XML2ST_DEF_MINT("age",	            struct person, age),
 	XML2ST_DEF_OSTR("email", (size_t)32, struct person, email),
 	XML2ST_DEF_OSTR("phone", (size_t)16, struct person, phone),
+	XML2ST_DEF_ODBL("salary",           struct person, salary),
 };
 
 static const struct xml2st_table person_tbl =
@@ -101,12 +103,13 @@ static int do_parse(const char * xml,
 	return (*p_out != NULL) ? 0 : -1;
 }
 
-/* 1) 全字段正常解析 */
+/* 1) 全字段正常解析 (含 dbl 字段 salary) */
 static void test_basic(void)
 {
 	static const char xml[] =
 "<person><name>Tom</name><age>20</age>"
-"<email>t@e.com</email><phone>123</phone></person>";
+"<email>t@e.com</email><phone>123</phone>"
+"<salary>10000</salary></person>";
 
 	xml2st_hndl	h = NULL;
 	struct person	* p = NULL;
@@ -123,12 +126,14 @@ static void test_basic(void)
 			"email == t@e.com");
 		CHECK(p->phone != NULL && strcmp(p->phone, "123")     == 0,
 			"phone == 123");
+		CHECK(p->salary!= NULL && *p->salary == 10000.0,
+			"salary == 10000");
 	}
 	if (h != NULL)
 		xml2st_easy_free(h);
 }
 
-/* 2) 缺可选字段 (email/phone) 应成功, 对应槽为 NULL */
+/* 2) 缺可选字段 (email/phone/salary) 应成功, 对应槽为 NULL */
 static void test_optional_missing(void)
 {
 	static const char xml[] =
@@ -142,6 +147,7 @@ static void test_optional_missing(void)
 	if (p != NULL) {
 		CHECK(p->email == NULL, "email slot NULL");
 		CHECK(p->phone == NULL, "phone slot NULL");
+		CHECK(p->salary== NULL, "salary slot NULL");
 	}
 	if (h != NULL)
 		xml2st_easy_free(h);
@@ -177,6 +183,21 @@ static void test_str_too_long(void)
 		xml2st_easy_free(h);
 }
 
+/* 5) int 字段值溢出 unsigned int 应失败 */
+static void test_int_overflow(void)
+{
+	static const char xml[] =
+"<person><name>Tom</name><age>99999999999</age></person>";
+
+	xml2st_hndl	h = NULL;
+	struct person	* p = NULL;
+
+	printf("[test_int_overflow]\n");
+	CHECK(do_parse(xml, &h, &p) != 0, "parse fails when age overflows uint");
+	if (h != NULL)
+		xml2st_easy_free(h);
+}
+
 int main(void)
 {
 	printf("==== xml2st tests ====\n");
@@ -184,6 +205,7 @@ int main(void)
 	test_optional_missing();
 	test_mandatory_missing();
 	test_str_too_long();
+	test_int_overflow();
 	printf("\n==== %d passed, %d failed ====\n", g_pass, g_fail);
 	xmlCleanupParser();
 	return (g_fail != 0) ? 1 : 0;
