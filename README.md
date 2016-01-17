@@ -73,11 +73,15 @@ xml2st_easy_free(h);                              /* 3. 释放, p 同时失效 *
 
 ## 编译与运行
 
-依赖 libxml2 开发包：
+依赖：
 
-- Debian/Ubuntu：`apt install libxml2-dev`
-- RHEL/Fedora/CentOS：`dnf install libxml2-devel`（CentOS 7 等旧版用 `yum`）
-- Arch Linux：`pacman -S libxml2`
+- **libxml2** 开发包
+  - Debian/Ubuntu：`apt install libxml2-dev`
+  - RHEL/Fedora/CentOS：`dnf install libxml2-devel`（CentOS 7 等旧版用 `yum`）
+  - Arch Linux：`pacman -S libxml2`
+- **iconv**（字符编码转换，str 字段解析时用于 UTF-8 与本地编码之间的转换）
+  - Linux：glibc 自带，无需额外安装
+  - Windows：需 libiconv，例如 MSYS2 下安装 `mingw-w64-x86_64-libiconv`
 
 ```
 make            # 编译 example 与 test
