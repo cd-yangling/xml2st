@@ -69,6 +69,7 @@ xml2st_easy_init(
 	hndl->rtbl	=	rtbl;
 	hndl->usrp	=	NULL;
 	hndl->done	=	0;
+	hndl->encoding	=	NULL;
 
 	return hndl;
 }
@@ -88,6 +89,14 @@ xml2st_easy_refdp(
 	xml2st_hndl						hndl)
 {
 	return hndl->usrp;
+}
+
+void
+xml2st_set_encoding(
+	xml2st_hndl						hndl,
+	const char					*	enc)
+{
+	hndl->encoding	=	enc;
 }
 
 void *
@@ -112,7 +121,7 @@ xml2st_easy_parse(
 	}
 
 	itbl = xml2st_itable_build(
-				&(hndl->sysm), hndl->rtbl);
+				&(hndl->sysm), hndl->rtbl, hndl->encoding);
 	if(__builtin_expect((NULL == itbl), 0))
 	{
 		return NULL;

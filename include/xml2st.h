@@ -56,6 +56,16 @@
 
 #define	stsizeof(t,m)	sizeof(((t*)0)->m)
 
+/*
+ * xml2st 默认目标编码 (未调用 xml2st_set_encoding 时生效):
+ * Windows 下用 GB18030(CP936), 其他平台(如 Linux)用 UTF-8.
+ */
+#ifdef _WIN32
+#define	XML2ST_DEFAULT_ENCODING	"GB18030"
+#else
+#define	XML2ST_DEFAULT_ENCODING	"UTF-8"
+#endif
+
 #ifdef	WIN32
 //int
 #define	XML2ST_DEF_MINT(				\

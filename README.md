@@ -16,7 +16,8 @@ xml2st 就是冲着这个来的：把"协议文档里的 XML"和"代码里的 C 
 - 解析结果由库内部内存池分配，统一释放
 - 日志默认走 stderr，可注入用户回调并携带上下文
 - 32/64 位兼容（字段以指针槽位组织，随 `sizeof(void*)` 自适应）
-- 仅依赖 libxml2
+- str 字段编码可配置（默认按平台：Windows 用 GB18030、Linux 用 UTF-8；可用 `xml2st_set_encoding` 自定义）
+- 仅依赖 libxml2 与 iconv
 
 ## 工作原理
 

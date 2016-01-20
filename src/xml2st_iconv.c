@@ -47,8 +47,7 @@
 #include "xml2st_log.h"
 #include "xml2st_internal.h"
 
-static
-int myiconv_iconv(
+int myiconv_convert(
 	const char * ienc, const char   * oenc,
 	const char * ibuf, unsigned int   ilen,
 	      char * obuf, unsigned int * olen)
@@ -78,42 +77,3 @@ int myiconv_iconv(
     return rc;
 }
 
-/**
- *	myiconv_utf8_2_gb18030 - UTF8编码转换成GB18030
- *
- *	@utf8_buf:		UTF8编码字符串
- *	@utf8_len:		UTF8编码字符串长度
- *	@gb_buf:		GB18030编码字符串
- *	@gb_len:		GB18030编码字符串长度
- *
- *	return
- *		==	0		成功
- *		!=	0		出错
- */
-int myiconv_utf8_2_gb18030(
-	const char * utf8_buf, unsigned int utf8_len,
-	char * gb_buf, unsigned int * gb_len)
-{
-	return myiconv_iconv("UTF-8", "GB18030",
-		utf8_buf, utf8_len, gb_buf, gb_len);
-}
-
-/**
- *	myiconv_gb18030_2_utf8 - GB18030编码转换成UTF8
- *
- *	@gb_buf:		GB18030编码字符串
- *	@gb_len:		GB18030编码字符串长度
- *	@utf8_buf:		UTF8编码字符串
- *	@utf8_len:		UTF8编码字符串长度
- *
- *	return
- *		==	0		成功
- *		!=	0		出错
- */
-int myiconv_gb18030_2_utf8(
-	const char * gb_buf, unsigned int gb_len,
-	char * utf8_buf, unsigned int * utf8_len)
-{
-	return myiconv_iconv("GB18030", "UTF-8",
-		gb_buf, gb_len, utf8_buf, utf8_len);
-}

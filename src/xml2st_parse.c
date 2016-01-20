@@ -151,7 +151,8 @@ static int do_leaves_node(
 	xml2st_memory_t				*	datm,
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node,
-	st_buffer_t						sbuf)
+	st_buffer_t						sbuf,
+	const char					*	encoding)
 {
 	xmlChar					*	text;
 	char					*	vptr;
@@ -172,7 +173,7 @@ static int do_leaves_node(
 			vptr = xml2st_write_int(datm, icol, (const char*)text);
 			break;
 	case xml2st_str:
-			vptr = xml2st_write_str(datm, icol, (const char*)text);
+			vptr = xml2st_write_str(datm, icol, (const char*)text, encoding);
 			break;
 	case xml2st_dbl:
 			vptr = xml2st_write_dbl(datm, icol, (const char*)text);
@@ -236,14 +237,15 @@ int xml2st_icolumn_parse(
 	xml2st_memory_t				*	datm,
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node,
-	st_buffer_t						sbuf)
+	st_buffer_t						sbuf,
+	const char					*	encoding)
 {
 	switch(icol->rcol->col_typ)
 	{
 	case xml2st_int:
 	case xml2st_str:
 	case xml2st_dbl:
-		return do_leaves_node(datm, icol, node, sbuf);
+		return do_leaves_node(datm, icol, node, sbuf, encoding);
 	case xml2st_ptr:
 		return do_branch_node(datm, icol, node);
 	default:
@@ -280,7 +282,7 @@ xml2st_itable_parse(
 			continue;
 
 		if(__builtin_expect(
-			xml2st_icolumn_parse(datm, icol, node, sbuf), 0))
+			xml2st_icolumn_parse(datm, icol, node, sbuf, itbl->encoding), 0))
 		{
 			return NULL;
 		}

@@ -130,40 +130,49 @@ void * xml2st_write_dbl(
 void * xml2st_write_str(
 	xml2st_memory_t				*	datm,
 	struct xml2st_column_in		*	icol,
-	const char					*	valp)
+	const char					*	valp,
+	const char					*	encoding)
 {
 	char	*	result;
+	char			cvt_buf[1024];
+	unsigned int	cvt_len;
 	size_t		length = strlen(valp);
 
 	if(__builtin_expect(
 		(icol->rcol->col_ltd &&
 		length > icol->rcol->col_ltd), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
+		xml2st_log(XML2ST_LOG_ERR,
 			"This field(%s) value(%s) "
 			"too long, LTD length %lu",
 			icol->rcol->col_xml, valp, icol->rcol->col_ltd);
 		return NULL;
 	}
 
-	char			gb_buf[1024];
-	unsigned int	gb_len = sizeof(gb_buf);
-
-	memset(gb_buf, 0, sizeof(gb_buf));
-	if (0 != myiconv_utf8_2_gb18030(
-		valp, length, gb_buf, &gb_len))
+	/* str 字段: XML 源为 UTF-8, 按目标编码转换; 目标为 UTF-8 时不转换 */
+	if(encoding != NULL &&
+	   encoding[0] != '\0' &&
+	   0 != strcmp(encoding, "UTF-8") &&
+	   0 != strcmp(encoding, "UTF8"))
 	{
-		xml2st_log(XML2ST_LOG_ERR, "field(%s) 编码转换错误", icol->rcol->col_xml);
-		return NULL;
-	}
+		cvt_len = sizeof(cvt_buf);
+		memset(cvt_buf, 0, sizeof(cvt_buf));
+		if(0 != myiconv_convert(
+			"UTF-8", encoding, valp, length, cvt_buf, &cvt_len))
+		{
+			xml2st_log(XML2ST_LOG_ERR,
+				"field(%s) 编码转换错误", icol->rcol->col_xml);
+			return NULL;
+		}
 
-	length = strlen(gb_buf); valp = gb_buf;
+		length = strlen(cvt_buf); valp = cvt_buf;
+	}
 
 	/*	ensure including the terminating null character*/
 	result = (char *)xml2st_std_alloc(datm, length + 1);
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
+		xml2st_log(XML2ST_LOG_ERR,
 			"xml2st_std_alloc(%lu) failed", length + 1);
 		return NULL;
 	}

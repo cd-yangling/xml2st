@@ -81,6 +81,7 @@ struct xml2st_table_in
 	xml2st_memory_t					*	sysm;
 	const struct xml2st_table		*	rtbl;
 	struct xml2st_column_in			**	icol;
+	const char						*	encoding;
 };
 
 struct xml2st_handle
@@ -90,6 +91,7 @@ struct xml2st_handle
 	void							*	usrp;
 	const struct xml2st_table		*	rtbl;
 	unsigned int						done;
+	const char						*	encoding;
 };
 
 typedef	char**						st_buffer_t;
@@ -112,7 +114,8 @@ xml2st_icolumn_lookup(
 struct xml2st_table_in *
 xml2st_itable_build(
 	xml2st_memory_t				*	sysm,
-	const struct xml2st_table	*	rtbl);
+	const struct xml2st_table	*	rtbl,
+	const char					*	encoding);
 
 void *
 xml2st_itable_parse(
@@ -143,7 +146,8 @@ void *
 xml2st_write_str(
 	xml2st_memory_t				*	datm,
 	struct xml2st_column_in		*	icol,
-	const char					*	valp);
+	const char					*	valp,
+	const char					*	encoding);
 
 void *
 xml2st_write_dbl(
@@ -167,36 +171,23 @@ xml2st_rtable_check(
 	size_t							calc);
 
 /**
- *	myiconv_utf8_2_gb18030 - UTF8编码转换成GB18030
+ *	myiconv_convert - 通用字符编码转换
  *
- *	@utf8_buf:		UTF8编码字符串
- *	@utf8_len:		UTF8编码字符串长度
- *	@gb_buf:		GB18030编码字符串
- *	@gb_len:		GB18030编码字符串长度
- *
- *	return
- *		==	0		成功
- *		!=	0		出错
- */
-int myiconv_utf8_2_gb18030(
-	const char * utf8_buf, unsigned int utf8_len,
-	char * gb_buf, unsigned int * gb_len);
-
-/**
- *	myiconv_gb18030_2_utf8 - GB18030编码转换成UTF8
- *
- *	@gb_buf:		GB18030编码字符串
- *	@gb_len:		GB18030编码字符串长度
- *	@utf8_buf:		UTF8编码字符串
- *	@utf8_len:		UTF8编码字符串长度
+ *	@ienc:		输入编码 (iconv 能识别的名字, 如 "UTF-8")
+ *	@oenc:		输出编码 (iconv 能识别的名字, 如 "GB18030")
+ *	@ibuf:		输入缓冲
+ *	@ilen:		输入字节数
+ *	@obuf:		输出缓冲
+ *	@olen:		输入为输出缓冲容量, 输出为实际写入字节数
  *
  *	return
  *		==	0		成功
  *		!=	0		出错
  */
-int myiconv_gb18030_2_utf8(
-	const char * gb_buf, unsigned int gb_len,
-	char * utf8_buf, unsigned int * utf8_len);
+int myiconv_convert(
+	const char * ienc, const char * oenc,
+	const char * ibuf, unsigned int ilen,
+	char * obuf, unsigned int * olen);
 
 #ifdef __cplusplus
 }

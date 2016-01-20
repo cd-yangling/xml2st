@@ -186,7 +186,7 @@ xml2st_icolumn_build(
 	if(xml2st_ptr == rcol->col_typ)
 	{
 		stbl =
-			xml2st_itable_build(sysm, rcol->sub_tbl);
+			xml2st_itable_build(sysm, rcol->sub_tbl, itbl->encoding);
 		if(__builtin_expect((NULL == stbl), 0))
 		{
 			return NULL;
@@ -254,7 +254,8 @@ xml2st_itable_init(
 struct xml2st_table_in *
 xml2st_itable_build(
 	xml2st_memory_t				*	sysm,
-	const struct xml2st_table	*	rtbl)
+	const struct xml2st_table	*	rtbl,
+	const char					*	encoding)
 {
 	size_t							i;
 	size_t							calc = 0;
@@ -272,6 +273,8 @@ xml2st_itable_build(
 	{
 		return NULL;
 	}
+
+	itbl->encoding = (encoding != NULL) ? encoding : XML2ST_DEFAULT_ENCODING;
 
 	for(i = 0; i < rtbl->nr_cols; i++)
 	{
