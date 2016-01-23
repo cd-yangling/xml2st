@@ -30,7 +30,18 @@ xml2st 就是冲着这个来的：把"协议文档里的 XML"和"代码里的 C 
 | dbl | `double *` | `*p->field` |
 | ptr（子表） | 子结构体指针 | `p->field`（嵌套） |
 
-以 `example.c` 解析 `<person>` 报文为例，三步走：
+以 `example.c` 解析下面这份 `<person>` 报文为例：
+
+```xml
+<person>
+    <name>ZhangSan</name>
+    <age>28</age>
+    <email>zs@example.com</email>
+    <phone>13800000000</phone>
+</person>
+```
+
+把它对应到 C 结构体，三步走：
 
 **1. 定义与报文对应的结构体（字段是指针类型）**
 
@@ -71,6 +82,46 @@ xml2st_easy_free(h);                              /* 3. 释放, p 同时失效 *
 ```
 
 所有解析结果的内存都在句柄的内存池里，`xml2st_easy_free` 时统一释放——外部无需、也切勿对单个字段单独 `free`。完整可运行示例见 `example.c`，回归测试见 `tests/test_xml2st.c`。
+
+**结构体嵌套（ptr 子表）**
+
+报文里常见"外层基本信息 + 内层重复明细"的结构（如订单 + 明细列表）：
+
+```xml
+<order>
+    <order_id>SO20160113001</order_id>
+    <customer>Acme Corp</customer>
+    <item_count>2</item_count>
+    <items>
+        <product>Widget</product>
+        <qty>100</qty>
+        <price>9.50</price>
+    </items>
+    <items>
+        <product>Gadget</product>
+        <qty>50</qty>
+        <price>19.99</price>
+    </items>
+</order>
+```
+
+用 `ptr` 类型字段挂一张子表即可表达：该字段在结构体里是一个"子表指针数组"（`struct 子表 **`），XML 里每个重复元素解析成一个子表实例放进数组；元素个数需由同级字段（如 `item_count`）给出，库本身不记录个数。声明用 `XML2ST_DEF_MPTR`（必选）/ `OPTR`（可选），第四个参数是子表：
+
+```c
+struct order_item { char *product; unsigned int *qty; char *price; };
+struct order      { char *order_id; ...; unsigned int *item_count;
+                    struct order_item **items; };
+
+static const struct xml2st_table order_item_tbl =
+    XML2ST_DEF_MTBL("item", struct order_item, order_item_cols);
+
+static const struct xml2st_column order_cols[] = {
+    ...,
+    XML2ST_DEF_MPTR("items", struct order, items, order_item_tbl),
+};
+```
+
+读取时按 `item_count` 遍历 `o->items[0..n-1]`。完整示例见 `example.c` 的 order 部分。
 
 ## 编译与运行
 
