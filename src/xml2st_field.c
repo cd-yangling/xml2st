@@ -155,8 +155,8 @@ void * xml2st_write_str(
 	/* str 字段: XML 源为 UTF-8, 按目标编码转换; 目标为 UTF-8 时不转换 */
 	if(encoding != NULL &&
 	   encoding[0] != '\0' &&
-	   0 != strcmp(encoding, "UTF-8") &&
-	   0 != strcmp(encoding, "UTF8"))
+	   strcasecmp(encoding, "UTF-8") != 0 &&
+	   strcasecmp(encoding, "UTF8") != 0)
 	{
 		cvt_len = sizeof(cvt_buf);
 		memset(cvt_buf, 0, sizeof(cvt_buf));

@@ -66,4 +66,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/* 跨平台字符串比较（不区分大小写） */
+#ifdef _WIN32
+#include <string.h>
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
+
 #endif	/* XML2ST_PORT_H */

@@ -138,6 +138,12 @@ xml2st_set_encoding(
 	xml2st_hndl						hndl,
 	const char					*	enc)
 {
+	if(NULL == hndl)
+		return;
+
+	if(hndl->done)
+		return;	/* parse 已完成，忽略设置 */
+
 	hndl->encoding	=	enc;
 }
 

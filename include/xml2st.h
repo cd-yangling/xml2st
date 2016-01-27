@@ -350,6 +350,18 @@ void *
 xml2st_easy_refdp(
 	xml2st_hndl						hndl);
 
+/*
+ * xml2st_set_encoding - 设置 str 字段目标编码
+ *
+ * @hndl: 句柄指针
+ * @enc: 目标编码（如 "GB18030", "UTF-8"），NULL 表示使用默认编码
+ *
+ * 注意：
+ * - 仅在第一次 xml2st_easy_parse 前调用生效
+ * - parse 完成后再次调用将被忽略（不会重新解析）
+ * - 编码名称不区分大小写（如 "utf-8" 与 "UTF-8" 等效）
+ * - 默认编码：Windows 为 GB18030，其他平台为 UTF-8
+ */
 void
 xml2st_set_encoding(
 	xml2st_hndl						hndl,
