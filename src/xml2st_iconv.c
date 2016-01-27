@@ -44,7 +44,6 @@
 
 
 #include "iconv.h"
-#include "xml2st_log.h"
 #include "xml2st_internal.h"
 
 int myiconv_convert(
@@ -56,19 +55,17 @@ int myiconv_convert(
     iconv_t cd;
     size_t ec;
     size_t lf = *olen;
-    char *inbuf = (char *)ibuf;  // 移除const限定
+    char *inbuf = (char *)ibuf;  /* 移除const限定 */
     size_t inbytesleft = ilen;
     size_t outbytesleft = lf;
 
     cd = iconv_open(oenc, ienc);
     if (cd == (iconv_t)-1) {
-        xml2st_log(XML2ST_LOG_ERR, "iconv open %s => %s", ienc, oenc);
         return -1;
     }
 
     ec = iconv(cd, &inbuf, &inbytesleft, &obuf, &outbytesleft);
     if (ec == (size_t)-1) {
-        xml2st_log(XML2ST_LOG_ERR, "iconv char %s => %s", ienc, oenc);
         rc = -1;
     }
 
@@ -76,4 +73,3 @@ int myiconv_convert(
     iconv_close(cd);
     return rc;
 }
-

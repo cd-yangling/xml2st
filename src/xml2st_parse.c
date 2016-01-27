@@ -49,10 +49,10 @@
 #include "list.h"
 #include "xml2st_internal.h"
 #include "xml2st.h"
-#include "xml2st_log.h"
 
 static int backtrace_icolumn(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	st_buffer_t						sbuf)
 {
@@ -68,20 +68,20 @@ static int backtrace_icolumn(
 	case xml2st_int:
 	case xml2st_str:
 	case xml2st_dbl:
-		return xml2st_icolumn_check(icol, sbuf[_idx]);
+		return xml2st_icolumn_check(hndl, icol, sbuf[_idx]);
 	case xml2st_ptr:
 		break;
 	default:
-		xml2st_log(XML2ST_LOG_ERR, "oops: %d", icol->rcol->col_typ);
+		xml2st_set_error(hndl, XML2ST_INTERNAL,
+			"unexpected field type: %d", icol->rcol->col_typ);
 		return -1;
 	}
 
 	if(__builtin_expect(
 		(icol->rcol->col_opt && (0 == icol->scnt)), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"This struct field(%s)"
-			" is mandatory, but not data",
+		xml2st_set_error(hndl, XML2ST_MISSING,
+			"missing required field '%s'",
 			icol->rcol->col_xml);
 		return -1;
 	}
@@ -89,17 +89,18 @@ static int backtrace_icolumn(
 	if(0 == icol->scnt)
 		return 0;
 
-	sbuf[_idx] = 
+	sbuf[_idx] =
 			xml2st_ptr_alloc(datm, icol->scnt, 1);
 	slot = (st_buffer_t)sbuf[_idx];
 
 	if(__builtin_expect((NULL == slot), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"xml2st_ptr_alloc(%lu) failed", icol->scnt);
+		xml2st_set_error(hndl, XML2ST_NOMEM,
+			"failed to allocate %zu elements for field '%s'",
+			icol->scnt, icol->rcol->col_xml);
 		return -1;
 	}
-	
+
 	i = 0;
 	list_for_each_safe(list, next, &(icol->head))
 	{
@@ -115,6 +116,7 @@ static int backtrace_icolumn(
 
 static int backtrace_itable(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_table_in			*	itbl,
 	st_buffer_t						sbuf)
 {
@@ -124,7 +126,7 @@ static int backtrace_itable(
 	{
 		if(__builtin_expect(
 			backtrace_icolumn(
-				datm, itbl->icol[i], sbuf), 0))
+				datm, hndl, itbl->icol[i], sbuf), 0))
 		{
 			return -1;
 		}
@@ -135,6 +137,7 @@ static int backtrace_itable(
 
 static st_buffer_t create_st_buffer(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_table_in			*	itbl)
 {
 	size_t							size;
@@ -144,11 +147,19 @@ static st_buffer_t create_st_buffer(
 			sizeof(struct list_head);
 
 	list = xml2st_std_alloc(datm, size);
+	if(__builtin_expect((NULL == list), 0))
+	{
+		xml2st_set_error(hndl, XML2ST_NOMEM,
+			"failed to allocate structure buffer for table '%s'",
+			itbl->rtbl->tblname);
+		return NULL;
+	}
 	return (char**)(list+1);/*	very important*/
 }
 
 static int do_leaves_node(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node,
 	st_buffer_t						sbuf,
@@ -156,7 +167,7 @@ static int do_leaves_node(
 {
 	xmlChar					*	text;
 	char					*	vptr;
-	
+
 	text = xmlNodeGetContent(node);
 	if(NULL == text)
 		return 0;
@@ -170,17 +181,18 @@ static int do_leaves_node(
 	switch(icol->rcol->col_typ)
 	{
 	case xml2st_int:
-			vptr = xml2st_write_int(datm, icol, (const char*)text);
+			vptr = xml2st_write_int(datm, hndl, icol, (const char*)text);
 			break;
 	case xml2st_str:
-			vptr = xml2st_write_str(datm, icol, (const char*)text, encoding);
+			vptr = xml2st_write_str(datm, hndl, icol, (const char*)text, encoding);
 			break;
 	case xml2st_dbl:
-			vptr = xml2st_write_dbl(datm, icol, (const char*)text);
+			vptr = xml2st_write_dbl(datm, hndl, icol, (const char*)text);
 			break;
 	default:
 		{
-			xml2st_log(XML2ST_LOG_ERR, "oops: %d", icol->rcol->col_typ);
+			xml2st_set_error(hndl, XML2ST_INTERNAL,
+				"unexpected field type: %d", icol->rcol->col_typ);
 			vptr = NULL;
 		}
 		break;
@@ -195,10 +207,9 @@ static int do_leaves_node(
 	if(__builtin_expect(
 		(NULL != sbuf[xml2st_column_index(icol)]), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"error: leaves_node "
-			"name: %s value: %s "
-			"is repeat", icol->rcol->col_xml, text);
+		xml2st_set_error(hndl, XML2ST_DUPLICATE,
+			"duplicate field '%s' with value '%s'",
+			icol->rcol->col_xml, (const char*)text);
 		xmlFree(text);
 		return -1;
 	}
@@ -211,6 +222,7 @@ static int do_leaves_node(
 
 static int do_branch_node(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node)
 {
@@ -218,7 +230,7 @@ static int do_branch_node(
 	struct list_head			*	head = &(icol->head);
 
 	list = xml2st_itable_parse(
-		datm, icol->stbl, node->children);
+		datm, hndl, icol->stbl, node->children);
 	if(__builtin_expect((NULL == list), 0))
 	{
 		return -1;
@@ -235,6 +247,7 @@ static int do_branch_node(
 static
 int xml2st_icolumn_parse(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node,
 	st_buffer_t						sbuf,
@@ -245,11 +258,12 @@ int xml2st_icolumn_parse(
 	case xml2st_int:
 	case xml2st_str:
 	case xml2st_dbl:
-		return do_leaves_node(datm, icol, node, sbuf, encoding);
+		return do_leaves_node(datm, hndl, icol, node, sbuf, encoding);
 	case xml2st_ptr:
-		return do_branch_node(datm, icol, node);
+		return do_branch_node(datm, hndl, icol, node);
 	default:
-		xml2st_log(XML2ST_LOG_ERR, "oops: %d", icol->rcol->col_typ);
+		xml2st_set_error(hndl, XML2ST_INTERNAL,
+			"unexpected field type: %d", icol->rcol->col_typ);
 		return -1;
 	}
 }
@@ -257,6 +271,7 @@ int xml2st_icolumn_parse(
 void*
 xml2st_itable_parse(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_table_in			*	itbl,
 	xmlNodePtr						lead)
 {
@@ -264,14 +279,12 @@ xml2st_itable_parse(
 	struct xml2st_column_in		*	icol;
 	st_buffer_t						sbuf;
 
-	sbuf = create_st_buffer(datm, itbl);
+	sbuf = create_st_buffer(datm, hndl, itbl);
 	if(__builtin_expect((NULL == sbuf), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"create_st_buffer(%s) failed", itbl->rtbl->tblname);
 		return NULL;
 	}
-	
+
 	for(node = lead; NULL != node; node = node->next)
 	{
 		if(XML_ELEMENT_NODE != node->type)
@@ -282,14 +295,14 @@ xml2st_itable_parse(
 			continue;
 
 		if(__builtin_expect(
-			xml2st_icolumn_parse(datm, icol, node, sbuf, itbl->encoding), 0))
+			xml2st_icolumn_parse(datm, hndl, icol, node, sbuf, itbl->encoding), 0))
 		{
 			return NULL;
 		}
 	}
 
 	if(__builtin_expect(
-		backtrace_itable(datm, itbl, sbuf), 0))
+		backtrace_itable(datm, hndl, itbl, sbuf), 0))
 	{
 		return NULL;
 	}

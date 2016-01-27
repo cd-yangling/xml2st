@@ -45,10 +45,13 @@
 
 #include "xml2st_port.h"
 #include "xml2st_internal.h"
-#include "xml2st_log.h"
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 
 void * xml2st_write_int(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp)
 {
@@ -60,9 +63,9 @@ void * xml2st_write_int(
 				datm, sizeof(unsigned int *));
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"xml2st_std_alloc(%lu) failed", 
-			sizeof(unsigned int *));
+		xml2st_set_error(hndl, XML2ST_NOMEM,
+			"failed to allocate integer for field '%s'",
+			icol->rcol->col_xml);
 		return NULL;
 	}
 
@@ -71,18 +74,17 @@ void * xml2st_write_int(
 	if(__builtin_expect(
 		(errno == ERANGE || val > (unsigned long)UINT_MAX), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR,
-			"This field(%s) value(%s) "
-			"overflow", icol->rcol->col_xml, valp);
+		xml2st_set_error(hndl, XML2ST_OVERFLOW,
+			"integer overflow in field '%s': value '%s' exceeds range",
+			icol->rcol->col_xml, valp);
 		return NULL;	/*	overflow*/
 	}
 	*result = (unsigned int)val;
 
 	if(*endptr != '\0')
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"This field(%s) values(%s) "
-			"include invalid characters",
+		xml2st_set_error(hndl, XML2ST_INVALID,
+			"invalid characters in field '%s': value '%s'",
 			icol->rcol->col_xml, valp);
 	}
 
@@ -91,6 +93,7 @@ void * xml2st_write_int(
 
 void * xml2st_write_dbl(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp)
 {
@@ -101,8 +104,9 @@ void * xml2st_write_dbl(
 				datm, sizeof(double *));
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"xml2st_std_alloc(%lu) failed", sizeof(double *));
+		xml2st_set_error(hndl, XML2ST_NOMEM,
+			"failed to allocate double for field '%s'",
+			icol->rcol->col_xml);
 		return NULL;
 	}
 
@@ -110,17 +114,16 @@ void * xml2st_write_dbl(
 	*result = strtod(valp, &endptr);
 	if(__builtin_expect((ERANGE == errno), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"This field(%s) value(%s) "
-			"overflow", icol->rcol->col_xml, valp);
+		xml2st_set_error(hndl, XML2ST_OVERFLOW,
+			"double overflow in field '%s': value '%s'",
+			icol->rcol->col_xml, valp);
 		return NULL;
 	}
 
 	if(*endptr != '\0')
 	{
-		xml2st_log(XML2ST_LOG_ERR, 
-			"This field(%s) values(%s) "
-			"include invalid characters",
+		xml2st_set_error(hndl, XML2ST_INVALID,
+			"invalid characters in field '%s': value '%s'",
 			icol->rcol->col_xml, valp);
 	}
 
@@ -129,6 +132,7 @@ void * xml2st_write_dbl(
 
 void * xml2st_write_str(
 	xml2st_memory_t				*	datm,
+	xml2st_hndl						hndl,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp,
 	const char					*	encoding)
@@ -142,10 +146,9 @@ void * xml2st_write_str(
 		(icol->rcol->col_ltd &&
 		length > icol->rcol->col_ltd), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR,
-			"This field(%s) value(%s) "
-			"too long, LTD length %lu",
-			icol->rcol->col_xml, valp, icol->rcol->col_ltd);
+		xml2st_set_error(hndl, XML2ST_TOOBIG,
+			"string too long in field '%s': %zu bytes (limit: %zu)",
+			icol->rcol->col_xml, length, icol->rcol->col_ltd);
 		return NULL;
 	}
 
@@ -160,8 +163,9 @@ void * xml2st_write_str(
 		if(0 != myiconv_convert(
 			"UTF-8", encoding, valp, length, cvt_buf, &cvt_len))
 		{
-			xml2st_log(XML2ST_LOG_ERR,
-				"field(%s) 编码转换错误", icol->rcol->col_xml);
+			xml2st_set_error(hndl, XML2ST_ICONV,
+				"encoding conversion failed for field '%s': UTF-8 to %s",
+				icol->rcol->col_xml, encoding);
 			return NULL;
 		}
 
@@ -172,8 +176,9 @@ void * xml2st_write_str(
 	result = (char *)xml2st_std_alloc(datm, length + 1);
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_log(XML2ST_LOG_ERR,
-			"xml2st_std_alloc(%lu) failed", length + 1);
+		xml2st_set_error(hndl, XML2ST_NOMEM,
+			"failed to allocate %zu bytes for field '%s'",
+			length + 1, icol->rcol->col_xml);
 		return NULL;
 	}
 
