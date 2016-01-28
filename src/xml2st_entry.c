@@ -73,7 +73,7 @@ xml2st_errcode(
 	xml2st_hndl						hndl)
 {
 	if(NULL == hndl)
-		return XML2ST_MISUSE;
+		return XML2ST_E_MISUSE;
 
 	return hndl->err.errcode;
 }
@@ -110,7 +110,7 @@ xml2st_easy_init(
 	hndl->encoding	=	NULL;
 
 	/* 初始化错误状态 */
-	hndl->err.errcode = XML2ST_OK;
+	hndl->err.errcode = XML2ST_E_OK;
 	hndl->err.errmsg[0] = '\0';
 
 	return hndl;
@@ -164,7 +164,7 @@ xml2st_easy_parse(
 	root = xmlDocGetRootElement(_doc);
 	if(__builtin_expect((NULL == root), 0))
 	{
-		xml2st_set_error(&(hndl->err), XML2ST_EMPTY,
+		xml2st_set_error(&(hndl->err), XML2ST_E_EMPTY,
 			"XML document has no root element");
 		return NULL;
 	}

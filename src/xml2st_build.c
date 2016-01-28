@@ -157,7 +157,7 @@ xml2st_icolumn_init(
 	icol = (struct xml2st_column_in*)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == icol), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate column structure for field '%s'",
 			rcol->col_xml);
 		return NULL;
@@ -208,7 +208,7 @@ xml2st_icolumn_build(
 			_xml2st_hash(
 				itbl, rcol->col_xml), icol)), 0))
 	{
-		xml2st_set_error(err, XML2ST_DUPLICATE,
+		xml2st_set_error(err, XML2ST_E_DUPLICATE,
 			"duplicate definition of field '%s' in table '%s'",
 			rcol->col_xml, itbl->rtbl->tblname);
 		return NULL;
@@ -230,7 +230,7 @@ xml2st_itable_init(
 	itbl = (struct xml2st_table_in *)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == itbl), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate table structure for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -240,7 +240,7 @@ xml2st_itable_init(
 	itbl->hash = (struct rb_root*)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == itbl->hash), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate hash table for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -250,7 +250,7 @@ xml2st_itable_init(
 						xml2st_ptr_alloc(sysm, rtbl->nr_cols, 0);
 	if(__builtin_expect((NULL == itbl->icol), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate column array for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -275,7 +275,7 @@ xml2st_itable_build(
 
 	if(__builtin_expect((NULL == rtbl->tblname), 0))
 	{
-		xml2st_set_error(err, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_E_MISUSE,
 			"table name is not defined");
 		return NULL;
 	}

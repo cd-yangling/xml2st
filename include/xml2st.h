@@ -296,34 +296,34 @@ struct xml2st_column
 /*
  * xml2st 错误码定义
  *
- * 成功: XML2ST_OK (0)
+ * 成功: XML2ST_E_OK (0)
  * 错误: 正整数，按类别分组
  */
 typedef enum {
-	XML2ST_OK = 0,		/* 操作成功 */
+	XML2ST_E_OK = 0,		/* 操作成功 */
 
 	/* 通用错误 (1-10) */
-	XML2ST_ERROR = 1,	/* 通用错误 */
-	XML2ST_NOMEM = 2,	/* 内存分配失败 */
-	XML2ST_INTERNAL = 3,/* 内部逻辑错误 */
+	XML2ST_E_ERROR = 1,	/* 通用错误 */
+	XML2ST_E_NOMEM = 2,	/* 内存分配失败 */
+	XML2ST_E_INTERNAL = 3,/* 内部逻辑错误 */
 
 	/* 参数/状态错误 (11-20) */
-	XML2ST_MISUSE = 11,	/* 库使用不当 */
-	XML2ST_RANGE = 12,	/* 参数超出范围 */
+	XML2ST_E_MISUSE = 11,	/* 库使用不当 */
+	XML2ST_E_RANGE = 12,	/* 参数超出范围 */
 
 	/* XML 结构错误 (21-30) */
-	XML2ST_EMPTY = 21,	/* XML 文档为空 */
-	XML2ST_CORRUPT = 22,/* XML 结构损坏 */
+	XML2ST_E_EMPTY = 21,	/* XML 文档为空 */
+	XML2ST_E_CORRUPT = 22,/* XML 结构损坏 */
 
 	/* 数据解析错误 (31-50) */
-	XML2ST_MISSING = 31,/* 缺少必需字段 */
-	XML2ST_DUPLICATE = 32,/* 字段重复出现 */
-	XML2ST_OVERFLOW = 33,/* 数值溢出 */
-	XML2ST_INVALID = 34,/* 值包含无效字符 */
-	XML2ST_TOOBIG = 35,/* 字符串超长 */
+	XML2ST_E_MISSING = 31,/* 缺少必需字段 */
+	XML2ST_E_DUPLICATE = 32,/* 字段重复出现 */
+	XML2ST_E_OVERFLOW = 33,/* 数值溢出 */
+	XML2ST_E_INVALID = 34,/* 值包含无效字符 */
+	XML2ST_E_TOOBIG = 35,/* 字符串超长 */
 
 	/* 编码转换错误 (51-60) */
-	XML2ST_ICONV = 51,	/* 编码转换失败 */
+	XML2ST_E_ICONV = 51,	/* 编码转换失败 */
 
 } xml2st_errcode_t;
 
@@ -372,7 +372,7 @@ xml2st_set_encoding(
  *
  * @hndl: 句柄指针
  *
- * Return: 错误码，XML2ST_OK 表示无错误
+ * Return: 错误码，XML2ST_E_OK 表示无错误
  *
  * 注意：后续操作会覆盖错误码，需立即读取
  */

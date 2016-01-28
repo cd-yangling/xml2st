@@ -72,7 +72,7 @@ static int backtrace_icolumn(
 	case xml2st_ptr:
 		break;
 	default:
-		xml2st_set_error(err, XML2ST_INTERNAL,
+		xml2st_set_error(err, XML2ST_E_INTERNAL,
 			"unexpected field type: %d", icol->rcol->col_typ);
 		return -1;
 	}
@@ -80,7 +80,7 @@ static int backtrace_icolumn(
 	if(__builtin_expect(
 		(icol->rcol->col_opt && (0 == icol->scnt)), 0))
 	{
-		xml2st_set_error(err, XML2ST_MISSING,
+		xml2st_set_error(err, XML2ST_E_MISSING,
 			"missing required field '%s'",
 			icol->rcol->col_xml);
 		return -1;
@@ -95,7 +95,7 @@ static int backtrace_icolumn(
 
 	if(__builtin_expect((NULL == slot), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate %zu elements for field '%s'",
 			icol->scnt, icol->rcol->col_xml);
 		return -1;
@@ -149,7 +149,7 @@ static st_buffer_t create_st_buffer(
 	list = xml2st_std_alloc(datm, size);
 	if(__builtin_expect((NULL == list), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate structure buffer for table '%s'",
 			itbl->rtbl->tblname);
 		return NULL;
@@ -191,7 +191,7 @@ static int do_leaves_node(
 			break;
 	default:
 		{
-			xml2st_set_error(err, XML2ST_INTERNAL,
+			xml2st_set_error(err, XML2ST_E_INTERNAL,
 				"unexpected field type: %d", icol->rcol->col_typ);
 			vptr = NULL;
 		}
@@ -207,7 +207,7 @@ static int do_leaves_node(
 	if(__builtin_expect(
 		(NULL != sbuf[xml2st_column_index(icol)]), 0))
 	{
-		xml2st_set_error(err, XML2ST_DUPLICATE,
+		xml2st_set_error(err, XML2ST_E_DUPLICATE,
 			"duplicate field '%s' with value '%s'",
 			icol->rcol->col_xml, (const char*)text);
 		xmlFree(text);
@@ -262,7 +262,7 @@ int xml2st_icolumn_parse(
 	case xml2st_ptr:
 		return do_branch_node(datm, err, icol, node);
 	default:
-		xml2st_set_error(err, XML2ST_INTERNAL,
+		xml2st_set_error(err, XML2ST_E_INTERNAL,
 			"unexpected field type: %d", icol->rcol->col_typ);
 		return -1;
 	}

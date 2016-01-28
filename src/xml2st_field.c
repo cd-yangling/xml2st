@@ -63,7 +63,7 @@ void * xml2st_write_int(
 				datm, sizeof(unsigned int *));
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate integer for field '%s'",
 			icol->rcol->col_xml);
 		return NULL;
@@ -74,7 +74,7 @@ void * xml2st_write_int(
 	if(__builtin_expect(
 		(errno == ERANGE || val > (unsigned long)UINT_MAX), 0))
 	{
-		xml2st_set_error(err, XML2ST_OVERFLOW,
+		xml2st_set_error(err, XML2ST_E_OVERFLOW,
 			"integer overflow in field '%s': value '%s' exceeds range",
 			icol->rcol->col_xml, valp);
 		return NULL;	/*	overflow*/
@@ -83,7 +83,7 @@ void * xml2st_write_int(
 
 	if(*endptr != '\0')
 	{
-		xml2st_set_error(err, XML2ST_INVALID,
+		xml2st_set_error(err, XML2ST_E_INVALID,
 			"invalid characters in field '%s': value '%s'",
 			icol->rcol->col_xml, valp);
 	}
@@ -104,7 +104,7 @@ void * xml2st_write_dbl(
 				datm, sizeof(double *));
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate double for field '%s'",
 			icol->rcol->col_xml);
 		return NULL;
@@ -114,7 +114,7 @@ void * xml2st_write_dbl(
 	*result = strtod(valp, &endptr);
 	if(__builtin_expect((ERANGE == errno), 0))
 	{
-		xml2st_set_error(err, XML2ST_OVERFLOW,
+		xml2st_set_error(err, XML2ST_E_OVERFLOW,
 			"double overflow in field '%s': value '%s'",
 			icol->rcol->col_xml, valp);
 		return NULL;
@@ -122,7 +122,7 @@ void * xml2st_write_dbl(
 
 	if(*endptr != '\0')
 	{
-		xml2st_set_error(err, XML2ST_INVALID,
+		xml2st_set_error(err, XML2ST_E_INVALID,
 			"invalid characters in field '%s': value '%s'",
 			icol->rcol->col_xml, valp);
 	}
@@ -146,7 +146,7 @@ void * xml2st_write_str(
 		(icol->rcol->col_ltd &&
 		length > icol->rcol->col_ltd), 0))
 	{
-		xml2st_set_error(err, XML2ST_TOOBIG,
+		xml2st_set_error(err, XML2ST_E_TOOBIG,
 			"string too long in field '%s': %zu bytes (limit: %zu)",
 			icol->rcol->col_xml, length, icol->rcol->col_ltd);
 		return NULL;
@@ -163,7 +163,7 @@ void * xml2st_write_str(
 		if(0 != myiconv_convert(
 			"UTF-8", encoding, valp, length, cvt_buf, &cvt_len))
 		{
-			xml2st_set_error(err, XML2ST_ICONV,
+			xml2st_set_error(err, XML2ST_E_ICONV,
 				"encoding conversion failed for field '%s': UTF-8 to %s",
 				icol->rcol->col_xml, encoding);
 			return NULL;
@@ -176,7 +176,7 @@ void * xml2st_write_str(
 	result = (char *)xml2st_std_alloc(datm, length + 1);
 	if(__builtin_expect((NULL == result), 0))
 	{
-		xml2st_set_error(err, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate %zu bytes for field '%s'",
 			length + 1, icol->rcol->col_xml);
 		return NULL;
