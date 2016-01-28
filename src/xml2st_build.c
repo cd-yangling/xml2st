@@ -146,7 +146,7 @@ static struct xml2st_column_in * _insert(
 static struct xml2st_column_in *
 xml2st_icolumn_init(
 	xml2st_memory_t				*	sysm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_column	*	rcol,
 	struct xml2st_table_in			*	stbl)
 {
@@ -157,7 +157,7 @@ xml2st_icolumn_init(
 	icol = (struct xml2st_column_in*)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == icol), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_NOMEM,
 			"failed to allocate column structure for field '%s'",
 			rcol->col_xml);
 		return NULL;
@@ -174,7 +174,7 @@ xml2st_icolumn_init(
 static struct xml2st_column_in *
 xml2st_icolumn_build(
 	xml2st_memory_t				*	sysm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_table_in			*	itbl,
 	const struct xml2st_column	*	rcol)
 {
@@ -182,7 +182,7 @@ xml2st_icolumn_build(
 	struct xml2st_table_in			*	stbl = NULL;
 
 	if(__builtin_expect(
-		(xml2st_rcolumn_check(hndl, rcol)), 0))
+		(xml2st_rcolumn_check(err, rcol)), 0))
 	{
 		return NULL;
 	}
@@ -190,14 +190,14 @@ xml2st_icolumn_build(
 	if(xml2st_ptr == rcol->col_typ)
 	{
 		stbl =
-			xml2st_itable_build(sysm, hndl, rcol->sub_tbl, itbl->encoding);
+			xml2st_itable_build(sysm, err, rcol->sub_tbl, itbl->encoding);
 		if(__builtin_expect((NULL == stbl), 0))
 		{
 			return NULL;
 		}
 	}
 
-	icol = xml2st_icolumn_init(sysm, hndl, rcol, stbl);
+	icol = xml2st_icolumn_init(sysm, err, rcol, stbl);
 	if(__builtin_expect((NULL == icol), 0))
 	{
 		return NULL;
@@ -208,7 +208,7 @@ xml2st_icolumn_build(
 			_xml2st_hash(
 				itbl, rcol->col_xml), icol)), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_DUPLICATE,
+		xml2st_set_error(err, XML2ST_DUPLICATE,
 			"duplicate definition of field '%s' in table '%s'",
 			rcol->col_xml, itbl->rtbl->tblname);
 		return NULL;
@@ -220,7 +220,7 @@ xml2st_icolumn_build(
 static struct xml2st_table_in *
 xml2st_itable_init(
 	xml2st_memory_t				*	sysm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_table	*	rtbl)
 {
 	struct xml2st_table_in			*	itbl;
@@ -230,7 +230,7 @@ xml2st_itable_init(
 	itbl = (struct xml2st_table_in *)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == itbl), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_NOMEM,
 			"failed to allocate table structure for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -240,7 +240,7 @@ xml2st_itable_init(
 	itbl->hash = (struct rb_root*)xml2st_std_alloc(sysm, size);
 	if(__builtin_expect((NULL == itbl->hash), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_NOMEM,
 			"failed to allocate hash table for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -250,7 +250,7 @@ xml2st_itable_init(
 						xml2st_ptr_alloc(sysm, rtbl->nr_cols, 0);
 	if(__builtin_expect((NULL == itbl->icol), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_NOMEM,
+		xml2st_set_error(err, XML2ST_NOMEM,
 			"failed to allocate column array for '%s'",
 			rtbl->tblname);
 		return NULL;
@@ -264,7 +264,7 @@ xml2st_itable_init(
 struct xml2st_table_in *
 xml2st_itable_build(
 	xml2st_memory_t				*	sysm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_table	*	rtbl,
 	const char					*	encoding)
 {
@@ -275,12 +275,12 @@ xml2st_itable_build(
 
 	if(__builtin_expect((NULL == rtbl->tblname), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"table name is not defined");
 		return NULL;
 	}
 
-	itbl = xml2st_itable_init(sysm, hndl, rtbl);
+	itbl = xml2st_itable_init(sysm, err, rtbl);
 	if(__builtin_expect((NULL == itbl), 0))
 	{
 		return NULL;
@@ -295,7 +295,7 @@ xml2st_itable_build(
 		calc += rcol->col_len;
 
 		itbl->icol[i] =
-			xml2st_icolumn_build(sysm, hndl, itbl, rcol);
+			xml2st_icolumn_build(sysm, err, itbl, rcol);
 		if(__builtin_expect(
 			(NULL == itbl->icol[i]), 0))
 		{
@@ -304,7 +304,7 @@ xml2st_itable_build(
 	}
 
 	if(__builtin_expect(
-		(xml2st_rtable_check(hndl, rtbl, calc)), 0))
+		(xml2st_rtable_check(err, rtbl, calc)), 0))
 	{
 		return NULL;
 	}

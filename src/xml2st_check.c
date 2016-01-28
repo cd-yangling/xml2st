@@ -48,14 +48,14 @@
 #include "xml2st.h"
 
 int xml2st_icolumn_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_column_in		*	icol,
 	void						*	vptr)
 {
 	if(__builtin_expect(
 		((icol->rcol->col_opt) && (NULL == vptr)), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISSING,
+		xml2st_set_error(err, XML2ST_MISSING,
 			"missing required field '%s'",
 			icol->rcol->col_xml);
 		return -1;
@@ -65,13 +65,13 @@ int xml2st_icolumn_check(
 }
 
 int xml2st_rcolumn_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_column	*	rcol)
 {
 	if(__builtin_expect(
 		(NULL == rcol->col_xml), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"field XML tag is NULL");
 		return -1;
 	}
@@ -79,7 +79,7 @@ int xml2st_rcolumn_check(
 	if(__builtin_expect(
 		(sizeof(void*) != rcol->col_len), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"unexpected field length %zu (expected %zu) for field '%s'",
 			rcol->col_len, sizeof(void*), rcol->col_xml);
 		return -1;
@@ -88,7 +88,7 @@ int xml2st_rcolumn_check(
 	if(__builtin_expect(
 		(rcol->col_off % sizeof(void*)), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"unexpected field offset %zu for field '%s'",
 			rcol->col_off, rcol->col_xml);
 		return -1;
@@ -103,7 +103,7 @@ int xml2st_rcolumn_check(
 			if(__builtin_expect(
 				(NULL != rcol->sub_tbl), 0))
 			{
-				xml2st_set_error(hndl, XML2ST_MISUSE,
+				xml2st_set_error(err, XML2ST_MISUSE,
 					"unexpected sub-table for non-pointer field '%s'",
 					rcol->col_xml);
 				return -1;
@@ -115,7 +115,7 @@ int xml2st_rcolumn_check(
 			if(__builtin_expect(
 				(NULL == rcol->sub_tbl), 0))
 			{
-				xml2st_set_error(hndl, XML2ST_MISUSE,
+				xml2st_set_error(err, XML2ST_MISUSE,
 					"missing sub-table for pointer field '%s'",
 					rcol->col_xml);
 				return -1;
@@ -123,7 +123,7 @@ int xml2st_rcolumn_check(
 		}
 		break;
 	default:
-		xml2st_set_error(hndl, XML2ST_INTERNAL,
+		xml2st_set_error(err, XML2ST_INTERNAL,
 			"unexpected field type: %d", rcol->col_typ);
 		return -1;
 	}
@@ -132,7 +132,7 @@ int xml2st_rcolumn_check(
 }
 
 int xml2st_rtable_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_table	*	rtbl,
 	size_t							calc)
 {
@@ -145,7 +145,7 @@ int xml2st_rtable_check(
 
 	if(__builtin_expect(result, 0))
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"table '%s' field size mismatch: %zu != %zu",
 			rtbl->tblname, calc, size);
 		return result;
@@ -153,7 +153,7 @@ int xml2st_rtable_check(
 
 	if(rtbl->tbl_len != size)
 	{
-		xml2st_set_error(hndl, XML2ST_MISUSE,
+		xml2st_set_error(err, XML2ST_MISUSE,
 			"table '%s' structure size mismatch: %zu != %zu",
 			rtbl->tblname, rtbl->tbl_len, size);
 		return -1;

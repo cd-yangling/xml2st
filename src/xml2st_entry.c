@@ -51,20 +51,20 @@
 
 void
 xml2st_set_error(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	int								errcode,
 	const char					*	fmt,
 	...)
 {
 	va_list							ap;
 
-	if(NULL == hndl)
+	if(NULL == err)
 		return;
 
-	hndl->errcode = errcode;
+	err->errcode = errcode;
 
 	va_start(ap, fmt);
-	vsnprintf(hndl->errmsg, sizeof(hndl->errmsg), fmt, ap);
+	vsnprintf(err->errmsg, sizeof(err->errmsg), fmt, ap);
 	va_end(ap);
 }
 
@@ -75,7 +75,7 @@ xml2st_errcode(
 	if(NULL == hndl)
 		return XML2ST_MISUSE;
 
-	return hndl->errcode;
+	return hndl->err.errcode;
 }
 
 const char *
@@ -85,7 +85,7 @@ xml2st_errmsg(
 	if(NULL == hndl)
 		return "invalid handle";
 
-	return hndl->errmsg;
+	return hndl->err.errmsg;
 }
 
 xml2st_hndl
@@ -110,8 +110,8 @@ xml2st_easy_init(
 	hndl->encoding	=	NULL;
 
 	/* 初始化错误状态 */
-	hndl->errcode = XML2ST_OK;
-	hndl->errmsg[0] = '\0';
+	hndl->err.errcode = XML2ST_OK;
+	hndl->err.errmsg[0] = '\0';
 
 	return hndl;
 }
@@ -164,20 +164,20 @@ xml2st_easy_parse(
 	root = xmlDocGetRootElement(_doc);
 	if(__builtin_expect((NULL == root), 0))
 	{
-		xml2st_set_error(hndl, XML2ST_EMPTY,
+		xml2st_set_error(&(hndl->err), XML2ST_EMPTY,
 			"XML document has no root element");
 		return NULL;
 	}
 
 	itbl = xml2st_itable_build(
-				&(hndl->sysm), hndl, hndl->rtbl, hndl->encoding);
+				&(hndl->sysm), &(hndl->err), hndl->rtbl, hndl->encoding);
 	if(__builtin_expect((NULL == itbl), 0))
 	{
 		return NULL;
 	}
 
 	usrp = xml2st_itable_parse(
-		&(hndl->datm), hndl, itbl, root->children);
+		&(hndl->datm), &(hndl->err), itbl, root->children);
 
 	hndl->usrp = usrp;
 

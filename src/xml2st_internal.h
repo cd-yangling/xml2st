@@ -65,6 +65,12 @@ typedef struct xml2st_memory_s
 	size_t								left;
 } xml2st_memory_t;
 
+typedef struct xml2st_error_s
+{
+	int									errcode;
+	char								errmsg[128];
+} xml2st_error_t;
+
 struct xml2st_column_in
 {
 	const struct xml2st_column		*	rcol;
@@ -94,8 +100,7 @@ struct xml2st_handle
 	const char						*	encoding;
 
 	/* 错误状态 */
-	int									errcode;
-	char								errmsg[128];
+	xml2st_error_t						err;
 };
 
 typedef	char**						st_buffer_t;
@@ -118,14 +123,14 @@ xml2st_icolumn_lookup(
 struct xml2st_table_in *
 xml2st_itable_build(
 	xml2st_memory_t				*	sysm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_table	*	rtbl,
 	const char					*	encoding);
 
 void *
 xml2st_itable_parse(
 	xml2st_memory_t				*	datm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_table_in			*	itbl,
 	xmlNodePtr						lead);
 
@@ -145,14 +150,14 @@ xml2st_ptr_alloc(xml2st_memory_t * mem, size_t nmemb, size_t expand);
 void *
 xml2st_write_int(
 	xml2st_memory_t				*	datm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp);
 
 void *
 xml2st_write_str(
 	xml2st_memory_t				*	datm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp,
 	const char					*	encoding);
@@ -160,39 +165,39 @@ xml2st_write_str(
 void *
 xml2st_write_dbl(
 	xml2st_memory_t				*	datm,
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_column_in		*	icol,
 	const char					*	valp);
 
 /*	check module*/
 int
 xml2st_icolumn_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	struct xml2st_column_in		*	icol,
 	void						*	vptr);
 
 int
 xml2st_rcolumn_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_column	*	rcol);
 
 int
 xml2st_rtable_check(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	const struct xml2st_table	*	rtbl,
 	size_t							calc);
 
 /*
  * xml2st_set_error - 设置错误状态（内部使用）
  *
- * @hndl: 句柄指针
+ * @err: 错误结构体指针
  * @errcode: 错误码
  * @fmt: 格式化字符串
  * @...: 可变参数
  */
 void
 xml2st_set_error(
-	xml2st_hndl						hndl,
+	xml2st_error_t				*	err,
 	int								errcode,
 	const char					*	fmt,
 	...);
