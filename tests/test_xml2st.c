@@ -198,6 +198,58 @@ static void test_int_overflow(void)
 		xml2st_easy_free(h);
 }
 
+/* 6) 测试重复字段定义（表格定义阶段检测） */
+static void test_duplicate_field(void)
+{
+	/*
+	 * 定义一个专门用于测试重复字段的结构体
+	 * 只包含3个字段（与 dup_cols 数量匹配）
+	 */
+	struct dup_test {
+		char			* name;	/* 字段1 */
+		unsigned int	* age;	/* 字段2 */
+		char			* email;/* 字段3 */
+	};
+
+	/* 创建一个包含重复字段的测试表格 */
+	static const struct xml2st_column dup_cols[] = {
+		XML2ST_DEF_MSTR("name",  (size_t)16, struct dup_test, name),
+		XML2ST_DEF_MINT("age",	            struct dup_test, age),
+		XML2ST_DEF_MSTR("name",  (size_t)16, struct dup_test, email), /* 重复的 name */
+	};
+
+	static const struct xml2st_table dup_tbl =
+		XML2ST_DEF_MTBL("duplicate", struct dup_test, dup_cols);
+
+	xml2st_hndl	h = NULL;
+	struct dup_test * p = NULL;
+	xmlDocPtr	doc = NULL;
+	static const char xml[] = "<duplicate><name>Tom</name><age>20</age></duplicate>";
+	int		errcode;
+
+	printf("[test_duplicate_field]\n");
+
+	/* 初始化应该成功（不检查字段定义） */
+	h = xml2st_easy_init(&dup_tbl);
+	CHECK(h != NULL, "init succeeds for duplicate field test");
+
+	if (h != NULL) {
+		/* parse 应该失败（构建阶段检测到重复字段） */
+		doc = xmlReadMemory(xml, (int)strlen(xml), NULL, "UTF-8", 0);
+		p = xml2st_easy_parse(h, doc);
+		CHECK(p == NULL, "parse fails when table has duplicate fields");
+
+		/* 验证错误码 */
+		errcode = xml2st_errcode(h);
+		CHECK(errcode == XML2ST_E_DUPLICATE,
+			"errcode is XML2ST_E_DUPLICATE (32)");
+
+		if (doc != NULL)
+			xmlFreeDoc(doc);
+		xml2st_easy_free(h);
+	}
+}
+
 int main(void)
 {
 	printf("==== xml2st tests ====\n");
@@ -206,6 +258,7 @@ int main(void)
 	test_mandatory_missing();
 	test_str_too_long();
 	test_int_overflow();
+	test_duplicate_field();
 	printf("\n==== %d passed, %d failed ====\n", g_pass, g_fail);
 	xmlCleanupParser();
 	return (g_fail != 0) ? 1 : 0;

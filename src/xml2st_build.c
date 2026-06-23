@@ -44,64 +44,66 @@
 
 
 #include "xml2st_port.h"
-#include "rbtree.h"
 #include "list.h"
 #include "xml2st_internal.h"
 #include "xml2st.h"
 #include <string.h>
 
-static
-unsigned int BKDR(
-	const char					*	v,
-	unsigned int					c)
+/*
+ * bsearch/qsort 辅助函数
+ * 用于排序数组查找（替代 rbtree）
+ */
+
+/* qsort 比较函数：比较两个 icol 指针 */
+static int
+_compare_for_sort(
+	const void					*	a,
+	const void					*	b)
 {
-	size_t			i;
-	size_t			n = strlen(v);
+	const struct xml2st_column_in *	icol_a;
+	const struct xml2st_column_in *	icol_b;
 
-	for(i = 0; i < n; i++)
-	{
-		c = c * 131 + v[i];
-	}
+	icol_a = *(const struct xml2st_column_in **)a;
+	icol_b = *(const struct xml2st_column_in **)b;
 
-	return c;
+	return strcmp(icol_a->rcol->col_xml, icol_b->rcol->col_xml);
 }
 
-static
-struct rb_root * _xml2st_hash(
+/* bsearch 比较函数：比较字符串 key 和 icol 指针 */
+static int
+_compare_for_search(
+	const void					*	key,
+	const void					*	element)
+{
+	const char					*	xml_name;
+	const struct xml2st_column_in *	icol;
+
+	xml_name = (const char *)key;
+	icol = *(const struct xml2st_column_in **)element;
+
+	return strcmp(xml_name, icol->rcol->col_xml);
+}
+
+/*
+ * bsearch 查找函数（替代 hash+rbtree）
+ * 直接在排序数组中查找
+ */
+static struct xml2st_column_in *
+_lookup_bsearch(
 	struct xml2st_table_in			*	itbl,
 	const char					*	_xml)
 {
-	unsigned int	hash = 0;
+	struct xml2st_column_in		**	result;
 
-	hash = BKDR(_xml, hash);
+	/* 使用 bsearch 查找 */
+	result = (struct xml2st_column_in **)bsearch(
+		_xml,
+		itbl->icol,
+		itbl->rtbl->nr_cols,
+		sizeof(struct xml2st_column_in *),
+		_compare_for_search);
 
-	return itbl->hash + (hash % NR_X2S_HASH_BUCKET);
-}
-
-static struct xml2st_column_in * _select(
-	struct rb_root				*	root,
-	const char					*	_xml)
-{
-	int							result;
-	struct rb_node			*	node = root->rb_node;
-	struct xml2st_column_in	*	mcol;
-
-	while(node)
-	{
-		mcol = rb_entry(node, struct xml2st_column_in, node);
-
-		result = strcmp(_xml, mcol->rcol->col_xml);
-		if(result < 0)
-			node = node->rb_left;
-		else if(result > 0)
-			node = node->rb_right;
-		else
-		{
-			return mcol;
-		}
-	}
-
-	return NULL;
+	return (result != NULL) ? *result : NULL;
 }
 
 struct xml2st_column_in *
@@ -109,38 +111,8 @@ xml2st_icolumn_lookup(
 	struct xml2st_table_in			*	itbl,
 	const char					*	_xml)
 {
-	return _select(_xml2st_hash(itbl, _xml), _xml);
-}
-
-static struct xml2st_column_in * _insert(
-	struct rb_root				*	root,
-	struct xml2st_column_in		*	icol)
-{
-	int						result;
-	struct rb_node			**link, *parent=NULL;
-	struct xml2st_column_in	*mcol;
-
-	link = &(root->rb_node);
-	while(*link)
-	{
-		parent = *link;
-		mcol = rb_entry(parent, struct xml2st_column_in, node);
-		result = strcmp(icol->rcol->col_xml,
-							mcol->rcol->col_xml);
-		if(result < 0)
-			link = &((*link)->rb_left);
-		else if (result > 0)
-			link = &((*link)->rb_right);
-		else
-		{
-			return NULL;
-		}
-	}
-
-	rb_link_node(&(icol->node), parent, link);
-	rb_insert_color(&(icol->node), root);
-
-	return icol;
+	/* 使用 bsearch 查找（替代 hash+rbtree） */
+	return _lookup_bsearch(itbl, _xml);
 }
 
 static struct xml2st_column_in *
@@ -203,17 +175,6 @@ xml2st_icolumn_build(
 		return NULL;
 	}
 
-	if(__builtin_expect(
-		(icol != _insert(
-			_xml2st_hash(
-				itbl, rcol->col_xml), icol)), 0))
-	{
-		xml2st_set_error(err, XML2ST_E_DUPLICATE,
-			"duplicate definition of field '%s' in table '%s'",
-			rcol->col_xml, itbl->rtbl->tblname);
-		return NULL;
-	}
-
 	return icol;
 }
 
@@ -232,16 +193,6 @@ xml2st_itable_init(
 	{
 		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate table structure for '%s'",
-			rtbl->tblname);
-		return NULL;
-	}
-
-	size = sizeof(struct rb_root) * NR_X2S_HASH_BUCKET;
-	itbl->hash = (struct rb_root*)xml2st_std_alloc(sysm, size);
-	if(__builtin_expect((NULL == itbl->hash), 0))
-	{
-		xml2st_set_error(err, XML2ST_E_NOMEM,
-			"failed to allocate hash table for '%s'",
 			rtbl->tblname);
 		return NULL;
 	}
@@ -307,6 +258,31 @@ xml2st_itable_build(
 		(xml2st_rtable_check(err, rtbl, calc)), 0))
 	{
 		return NULL;
+	}
+
+	/*
+	 * 对 icol 数组排序（用于 bsearch 查找）
+	 * 替代 hash+rbtree 方案
+	 */
+	qsort(itbl->icol, rtbl->nr_cols,
+		sizeof(struct xml2st_column_in *),
+		_compare_for_sort);
+
+	/*
+	 * 检查重复元素（排序后更容易检测）
+	 * 遍历一次，检查相邻元素是否相同
+	 */
+	for(i = 1; i < rtbl->nr_cols; i++)
+	{
+		if(strcmp(
+			itbl->icol[i-1]->rcol->col_xml,
+			itbl->icol[i]->rcol->col_xml) == 0)
+		{
+			xml2st_set_error(err, XML2ST_E_DUPLICATE,
+				"duplicate definition of field '%s' in table '%s'",
+				itbl->icol[i]->rcol->col_xml, itbl->rtbl->tblname);
+			return NULL;
+		}
 	}
 
 	return itbl;

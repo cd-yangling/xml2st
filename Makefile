@@ -36,10 +36,10 @@ CFLAGS  += -m32
 LDFLAGS += -m32
 endif
 
-# 库源码 (对外头在 include/, 内部实现 + 内部头在 src/, 内核移植在 lib/)
+# 库源码 (对外头在 include/, 内部实现 + 内部头在 src/, 内部移植在 lib/)
 LIB_SRCS := src/xml2st_build.c src/xml2st_check.c src/xml2st_entry.c \
             src/xml2st_field.c src/xml2st_iconv.c src/xml2st_mmblk.c \
-            src/xml2st_parse.c lib/rbtree.c
+            src/xml2st_parse.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 
 .PHONY: all example test clean

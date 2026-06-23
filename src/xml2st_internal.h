@@ -49,7 +49,6 @@
 #include "xml2st_port.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
-#include "rbtree.h"
 #include "list.h"
 #include "xml2st.h"
 
@@ -74,7 +73,6 @@ typedef struct xml2st_error_s
 struct xml2st_column_in
 {
 	const struct xml2st_column		*	rcol;
-	struct rb_node						node;
 	struct xml2st_table_in				*	stbl;
 	size_t								scnt;
 	struct list_head					head;
@@ -83,7 +81,6 @@ struct xml2st_column_in
 #define	NR_X2S_HASH_BUCKET				64
 struct xml2st_table_in
 {
-	struct rb_root					*	hash;
 	xml2st_memory_t					*	sysm;
 	const struct xml2st_table		*	rtbl;
 	struct xml2st_column_in			**	icol;
