@@ -149,7 +149,6 @@ make BITS=32    # 编译 32 位 (需 gcc-multilib 与 32 位 libxml2)
 xml2st/
 ├── include/   对外公开头 (xml2st.h)
 ├── src/       内部实现与内部头
-├── lib/       改编自 Linux 内核的基础设施 (rbtree / list)
 ├── tests/     回归测试
 ├── example.c  用法示例
 └── Makefile
@@ -157,4 +156,4 @@ xml2st/
 
 ## 许可证
 
-GPL-2.0。其中 `lib/rbtree.*` 与 `lib/list.h` 改编自 Linux 内核（GPL-2.0-only），随内核原版许可。
+MIT License。
