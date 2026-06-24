@@ -49,7 +49,7 @@
 #include "xml2st_port.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
-#include "list.h"
+#include "xml2st_slist.h"
 #include "xml2st.h"
 
 #ifdef _WIN32
@@ -59,7 +59,7 @@
 
 typedef struct xml2st_memory_s
 {
-	struct list_head					head;
+	struct slist_head					head;
 	char							*	curr;
 	size_t								left;
 } xml2st_memory_t;
@@ -75,7 +75,7 @@ struct xml2st_column_in
 	const struct xml2st_column		*	rcol;
 	struct xml2st_table_in				*	stbl;
 	size_t								scnt;
-	struct list_head					head;
+	struct slist_head					head;
 };
 
 #define	NR_X2S_HASH_BUCKET				64

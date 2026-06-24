@@ -46,7 +46,7 @@
 #include "xml2st_port.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
-#include "list.h"
+#include "xml2st_slist.h"
 #include "xml2st_internal.h"
 #include "xml2st.h"
 
@@ -59,8 +59,6 @@ static int backtrace_icolumn(
 	size_t							i;
 	size_t							_idx;
 	st_buffer_t						slot;
-	struct list_head			*	list;
-	struct list_head			*	next;
 
 	_idx = xml2st_column_index(icol);
 	switch(icol->rcol->col_typ)
@@ -102,14 +100,14 @@ static int backtrace_icolumn(
 	}
 
 	i = 0;
-	list_for_each_safe(list, next, &(icol->head))
+	while (!slist_empty(&(icol->head)))
 	{
-		slot[i] = (char*)(list + 1);++i;
-		list_del_init(list);
+		struct slist_node * node = slist_pop_head(&(icol->head));
+		slot[i] = (char*)(node + 1);++i;  /* 通过(node+1)获取数据，见create_st_buffer */
 	}
 
 	icol->scnt = 0;
-	INIT_LIST_HEAD(&(icol->head));
+	slist_init(&(icol->head));
 
 	return 0;
 }
@@ -141,20 +139,35 @@ static st_buffer_t create_st_buffer(
 	struct xml2st_table_in			*	itbl)
 {
 	size_t							size;
-	struct list_head			*	list;
+	struct slist_node			*	node;
+
+	/*
+	 * 子表数据块布局（节点在前面）：
+	 *
+	 *     +----------------+------------------------+
+	 *     | slist_node     | data (tbl_len)         |
+	 *     +----------------+------------------------+
+	 *     ^                ^
+	 *     |                |
+	 *     node             node + 1 (返回数据指针)
+	 *     (malloc返回)
+	 *
+	 * 隐含约定：节点在前面，通过(node+1)获取数据指针。
+	 * 与do_branch_node配对。
+	 */
 
 	size = itbl->rtbl->tbl_len +
-			sizeof(struct list_head);
+			sizeof(struct slist_node);
 
-	list = xml2st_std_alloc(datm, size);
-	if(__builtin_expect((NULL == list), 0))
+	node = xml2st_std_alloc(datm, size);
+	if(__builtin_expect((NULL == node), 0))
 	{
 		xml2st_set_error(err, XML2ST_E_NOMEM,
 			"failed to allocate structure buffer for table '%s'",
 			itbl->rtbl->tblname);
 		return NULL;
 	}
-	return (char**)(list+1);/*	very important*/
+	return (char**)(node+1);/*	very important*/
 }
 
 static int do_leaves_node(
@@ -226,19 +239,24 @@ static int do_branch_node(
 	struct xml2st_column_in		*	icol,
 	xmlNodePtr						node)
 {
-	struct list_head			*	list;
-	struct list_head			*	head = &(icol->head);
+	struct slist_node			*	slist_node;
+	struct slist_head			*	head = &(icol->head);
 
-	list = xml2st_itable_parse(
+	/*
+	 * 处理子表节点。通过(--node)回退到节点位置。
+	 * 见create_st_buffer的布局说明。
+	 */
+
+	slist_node = xml2st_itable_parse(
 		datm, err, icol->stbl, node->children);
-	if(__builtin_expect((NULL == list), 0))
+	if(__builtin_expect((NULL == slist_node), 0))
 	{
 		return -1;
 	}
 
-	--list;	/*	very important*/
+	--slist_node;	/*	very important*/
 
-	list_add_tail(list, head);
+	slist_add_tail(slist_node, head);
 	++icol->scnt;
 
 	return 0;

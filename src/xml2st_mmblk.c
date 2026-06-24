@@ -44,26 +44,27 @@
 
 
 #include "xml2st_port.h"
-#include "list.h"
+#include "xml2st_slist.h"
 #include "xml2st_internal.h"
 
 void xml2st_memory_init(xml2st_memory_t * mem)
 {
 	mem->curr = NULL;
 	mem->left = 0;
-	INIT_LIST_HEAD(&(mem->head));
+	slist_init(&(mem->head));
 }
 
 void xml2st_memory_free(xml2st_memory_t * mem)
 {
-	struct list_head * list;
-	struct list_head * safe;
-	struct list_head * head = &(mem->head);
+	/*
+	 * 释放所有内存块。
+	 * 节点在内存块开头，可以直接free。见xml2st_new_block的布局说明。
+	 */
 
-	list_for_each_safe(list, safe, head)
+	while (!slist_empty(&(mem->head)))
 	{
-		list_del_init(list);
-		free(list);
+		struct slist_node * node = slist_pop_head(&(mem->head));
+		free(node);
 	}
 
 	if(NULL != mem->curr)
@@ -74,12 +75,26 @@ void xml2st_memory_free(xml2st_memory_t * mem)
 
 static void xml2st_new_block(xml2st_memory_t * mem)
 {
-	struct list_head * list;
+	struct slist_node * node;
+
+	/*
+	 * 内存块布局（节点在开头）：
+	 *
+	 *     +----------------+------------------------+
+	 *     | slist_node     | data (64KB - 8B)       |
+	 *     +----------------+------------------------+
+	 *     ^                ^
+	 *     |                |
+	 *     mem->curr        mem->curr + sizeof(slist_node)
+	 *     (malloc返回)     (可用空间起始)
+	 *
+	 * 隐含约定：节点必须在开头，后续可以free(node)。
+	 */
 
 	if(NULL != mem->curr)
 	{
-		list = (struct list_head*)mem->curr;
-		list_add_tail(list, &(mem->head));
+		node = (struct slist_node*)mem->curr;
+		slist_add_tail(node, &(mem->head));
 		mem->curr = NULL;
 	}
 
@@ -88,7 +103,7 @@ static void xml2st_new_block(xml2st_memory_t * mem)
 	{
 		memset(mem->curr, 0, X2S_MEMORY_BLOCK_SIZE);
 		mem->left = X2S_MEMORY_BLOCK_SIZE -
-							sizeof(struct list_head);
+							sizeof(struct slist_node);
 	}
 }
 

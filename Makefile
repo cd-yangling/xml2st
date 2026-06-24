@@ -42,9 +42,9 @@ LIB_SRCS := src/xml2st_build.c src/xml2st_check.c src/xml2st_entry.c \
             src/xml2st_parse.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 
-.PHONY: all example test clean
+.PHONY: all example test test_slist clean
 
-all: example test
+all: example test test_slist
 
 example: example.o $(LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ example.o $(LIB_OBJS) $(LDFLAGS)
@@ -52,8 +52,11 @@ example: example.o $(LIB_OBJS)
 test: tests/test_xml2st.o $(LIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ tests/test_xml2st.o $(LIB_OBJS) $(LDFLAGS)
 
+test_slist: tests/test_slist.o
+	$(CC) $(CFLAGS) -o $@ tests/test_slist.o
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f example test $(LIB_OBJS) example.o tests/test_xml2st.o
+	rm -f example test test_slist $(LIB_OBJS) example.o tests/test_xml2st.o tests/test_slist.o

@@ -44,7 +44,6 @@
 
 
 #include "xml2st_port.h"
-#include "list.h"
 #include "xml2st_internal.h"
 #include "xml2st.h"
 #include <string.h>
@@ -138,7 +137,7 @@ xml2st_icolumn_init(
 	icol->rcol = rcol;
 	icol->scnt = 0;
 	icol->stbl = stbl;
-	INIT_LIST_HEAD(&(icol->head));
+	slist_init(&(icol->head));
 
 	return icol;
 }
